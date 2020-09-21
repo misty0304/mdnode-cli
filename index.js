@@ -11,8 +11,39 @@ const child_process = require('child_process')
 const handlebars = require('handlebars')
 const path = require('path')
 
+/**
+ * @Description: 域名正则规则
+ * @params:
+ * @return {type} 无
+ */
+const checkOrigins = val => {
+	return /^((http:\/\/)|(https:\/\/))?([a-z\-\d+]+\.){1,}[a-z\-\d]+(:\d{1,5})?$/i.test(val)
+}
+
+/**
+ * @Description:校验是否是域名
+ * @params:
+ * @return {type} 无
+ */
+const validateOrigins = (val, preAnswer) => {
+	const origins = val.split(',')
+	if (origins.every(checkOrigins) || !val) return true
+	return '请输入正确的域名地址，以http／https开头'
+}
+
+/**
+ * @Description: 域名数据组装
+ * @params:
+ * @return {type} 无
+ */
+const getOrigins = val => {
+	const origins = val.split(',')
+	const originsStrArr = origins.map(item => `'${item}'`)
+	return originsStrArr.join(',')
+}
+
 program
-	.version('1.0.0', '-v, --version')
+	.version('0.0.1', '-v, --version')
 	.command('init <name>')
 	.action(name => {
 		if (!fs.existsSync(name)) {
@@ -29,19 +60,31 @@ program
 					},
 					{
 						name: 'localOrigins',
-						message: '请输入开发环境允许跨域访问域名(字符串以逗号分隔):'
+						message: '请输入开发环境允许跨域访问域名(字符串格式以逗号分隔):',
+						validate: (val, preAnswer) => {
+							return validateOrigins(val, preAnswer)
+						}
 					},
 					{
 						name: 'devOrigins',
-						message: '请输入开发环境允许跨域访问域名(字符串以逗号分隔):'
+						message: '请输入开发环境允许跨域访问域名(字符串格式以逗号分隔):',
+						validate: (val, preAnswer) => {
+							return validateOrigins(val, preAnswer)
+						}
 					},
 					{
 						name: 'testOrigins',
-						message: '请输入测试环境允许跨域访问域名(字符串以逗号分隔):'
+						message: '请输入测试环境允许跨域访问域名(字符串格式以逗号分隔):',
+						validate: (val, preAnswer) => {
+							return validateOrigins(val, preAnswer)
+						}
 					},
 					{
 						name: 'proOrigins',
-						message: '请输入生产环境允许跨域访问域名(字符串以逗号分隔):'
+						message: '请输入生产环境允许跨域访问域名(字符串格式以逗号分隔):',
+						validate: (val, preAnswer) => {
+							return validateOrigins(val, preAnswer)
+						}
 					}
 				])
 				.then(answers => {
@@ -85,14 +128,14 @@ program
 									let content = fs.readFileSync(configFile).toString()
 									content = content.replace(/{{name}}/, name)
 									content = content.replace(/{{port}}/, answers.port)
-									content = content.replace(/{{localOrigins}}/, answers.localOrigins)
-									content = content.replace(/{{devOrigins}}/, answers.devOrigins)
-									content = content.replace(/{{testOrigins}}/, answers.testOrigins)
-									content = content.replace(/{{proOrigins}}/, answers.proOrigins)
+									content = content.replace(/{{localOrigins}}/, getOrigins(answers.localOrigins))
+									content = content.replace(/{{devOrigins}}/, getOrigins(answers.devOrigins))
+									content = content.replace(/{{testOrigins}}/, getOrigins(answers.testOrigins))
+									content = content.replace(/{{proOrigins}}/, getOrigins(answers.proOrigins))
 									fs.writeFileSync(`${name}/user.config.js`, content, {
 										encoding: 'utf8'
-                  })
-                  console.log(symbols.success, chalk.green('user.config.js初始化完成'))
+									})
+									console.log(symbols.success, chalk.green('user.config.js初始化完成'))
 									console.log(symbols.success, chalk.green('项目初始化完成'))
 								} else {
 									console.log(symbols.error, chalk.red('package不存在'))
